@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, X, BookOpen, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import BrandLogo from "@/components/ui/BrandLogo";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 
@@ -51,10 +52,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-[#007D07] flex items-center justify-center shadow-brand group-hover:scale-105 transition-transform">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <BrandLogo size="sm" className="shadow-brand group-hover:scale-105 transition-transform" />
             <div>
               <span className="font-heading font-800 text-neutral-900 text-sm leading-tight block">
                 Kind English
@@ -66,12 +65,18 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium text-neutral-600 hover:text-[#007D07] transition-colors">
+          <div className="hidden md:flex items-center gap-7">
+            <a href="#how-it-works" className="text-xs font-bold text-slate-600 hover:text-[#007D07] transition-colors">
+              Alur Ujian
+            </a>
+            <a href="#features" className="text-xs font-bold text-slate-600 hover:text-[#007D07] transition-colors">
               Fitur
             </a>
-            <a href="#testimonials" className="text-sm font-medium text-neutral-600 hover:text-[#007D07] transition-colors">
+            <a href="#testimonials" className="text-xs font-bold text-slate-600 hover:text-[#007D07] transition-colors">
               Testimoni
+            </a>
+            <a href="#faq" className="text-xs font-bold text-slate-600 hover:text-[#007D07] transition-colors">
+              FAQ
             </a>
           </div>
 
@@ -81,16 +86,17 @@ export default function Navbar() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-sm font-semibold text-[#007D07] border border-[#007D07] px-4 py-2 rounded-lg hover:bg-[#E8F5E9] transition-colors"
+                  className="flex items-center gap-2 text-xs font-bold text-white bg-[#007D07] hover:bg-[#006A06] px-4 py-2.5 rounded-xl shadow-brand transition-all hover:scale-105"
+                  title="Buka Dashboard Siswa"
                 >
                   <LayoutDashboard className="w-4 h-4" />
-                  <span className="max-w-[100px] truncate">{displayName}</span>
+                  <span>Dashboard Ujian ({displayName})</span>
                 </Link>
                 <button
                   onClick={handleSignOut}
                   disabled={signingOut}
-                  className="flex items-center gap-1.5 text-sm font-semibold text-neutral-500 hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
-                  title="Sign out"
+                  className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-red-600 px-3 py-2 rounded-xl hover:bg-red-50 transition-colors disabled:opacity-60"
+                  title="Keluar dari akun"
                 >
                   <LogOut className="w-4 h-4" />
                   {signingOut ? "..." : "Keluar"}
@@ -128,18 +134,20 @@ export default function Navbar() {
       {/* Mobile menu */}
       {open && (
         <div className="md:hidden border-t border-neutral-200 bg-white px-4 pb-4 pt-2 space-y-2 animate-fade-in">
-          <a href="#features" className="block py-2 text-sm font-medium text-neutral-600 hover:text-[#007D07]" onClick={() => setOpen(false)}>Fitur</a>
-          <a href="#testimonials" className="block py-2 text-sm font-medium text-neutral-600 hover:text-[#007D07]" onClick={() => setOpen(false)}>Testimoni</a>
+          <a href="#how-it-works" className="block py-2 text-sm font-semibold text-neutral-600 hover:text-[#007D07]" onClick={() => setOpen(false)}>Alur Ujian</a>
+          <a href="#features" className="block py-2 text-sm font-semibold text-neutral-600 hover:text-[#007D07]" onClick={() => setOpen(false)}>Fitur</a>
+          <a href="#testimonials" className="block py-2 text-sm font-semibold text-neutral-600 hover:text-[#007D07]" onClick={() => setOpen(false)}>Testimoni</a>
+          <a href="#faq" className="block py-2 text-sm font-semibold text-neutral-600 hover:text-[#007D07]" onClick={() => setOpen(false)}>FAQ</a>
           <div className="flex flex-col gap-2 pt-2">
             {user ? (
               <>
                 <Link
                   href="/dashboard"
-                  className="w-full text-center text-sm font-semibold text-[#007D07] border border-[#007D07] px-4 py-2 rounded-lg flex items-center justify-center gap-2"
+                  className="w-full text-center text-xs font-bold text-white bg-[#007D07] px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-brand"
                   onClick={() => setOpen(false)}
                 >
                   <LayoutDashboard className="w-4 h-4" />
-                  {displayName}
+                  Dashboard Ujian ({displayName})
                 </Link>
                 <button
                   onClick={() => { setOpen(false); handleSignOut(); }}

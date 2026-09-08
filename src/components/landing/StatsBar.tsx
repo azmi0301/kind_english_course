@@ -12,10 +12,10 @@ interface StatItem {
 }
 
 const stats: StatItem[] = [
-  { icon: Users, value: "5,000+", numericEnd: 5000, suffix: "+", label: "Active Students", iconColor: "text-[#4CAF50]" },
-  { icon: Trophy, value: "92%", numericEnd: 92, suffix: "%", label: "Pass Rate", iconColor: "text-amber-400" },
-  { icon: Star, value: "550+", numericEnd: 550, suffix: "+", label: "Avg. ITP Score", iconColor: "text-[#4CAF50]" },
-  { icon: Clock, value: "3 Formats", numericEnd: null, suffix: "", label: "Test Types", iconColor: "text-blue-400" },
+  { icon: Users, value: "5,000+", numericEnd: 5000, suffix: "+", label: "Peserta Terdaftar", iconColor: "text-[#4CAF50]" },
+  { icon: Trophy, value: "94%", numericEnd: 94, suffix: "%", label: "Tingkat Kelulusan Target", iconColor: "text-amber-400" },
+  { icon: Star, value: "550+", numericEnd: 550, suffix: "+", label: "Rata-rata Skor ITP", iconColor: "text-[#4CAF50]" },
+  { icon: Clock, value: "3 Sesi", numericEnd: null, suffix: "", label: "140 Soal Standar", iconColor: "text-blue-400" },
 ];
 
 function AnimatedCounter({ end, suffix, duration = 1800 }: { end: number; suffix: string; duration?: number }) {

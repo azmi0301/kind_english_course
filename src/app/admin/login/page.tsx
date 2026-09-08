@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { BookOpen, Eye, EyeOff, Loader2 } from "lucide-react";
+import BrandLogo from "@/components/ui/BrandLogo";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -48,9 +49,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-[#007D07] flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
+          <BrandLogo size="md" />
           <div>
             <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Admin Panel</p>
             <h1 className="font-bold text-gray-900 text-lg leading-tight">Kind English Course</h1>

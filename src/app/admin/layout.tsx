@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import BrandLogo from "@/components/ui/BrandLogo";
 import { supabase } from "@/lib/supabase";
 import {
   BookOpen, LayoutDashboard, FileQuestion, Users,
@@ -92,16 +93,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         } lg:translate-x-0`}
       >
         {/* Brand Header */}
-        <div className="p-6 border-b border-slate-800/80 flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#007D07] flex items-center justify-center text-white shadow-lg shadow-emerald-950">
-              <BookOpen className="w-5 h-5" />
+        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/95 p-1 flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-700/50">
+              <BrandLogo size="sm" />
             </div>
             <div>
-              <h1 className="font-extrabold text-sm text-white tracking-tight leading-tight">
-                Kind English
-              </h1>
-              <div className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold tracking-widest uppercase mt-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-sm text-white tracking-tight leading-none">
+                  Kind English
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wide">
+                  Course
+                </span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider mt-1.5 border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Assessment Admin
               </div>

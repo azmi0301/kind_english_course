@@ -4,8 +4,10 @@ import { cookies } from "next/headers";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import StatsBar from "@/components/landing/StatsBar";
+import HowItWorks from "@/components/landing/HowItWorks";
 import Features from "@/components/landing/Features";
 import Testimonials from "@/components/landing/Testimonials";
+import FAQ from "@/components/landing/FAQ";
 import Footer from "@/components/landing/Footer";
 
 export default async function LandingPage() {
@@ -37,8 +39,10 @@ export default async function LandingPage() {
       <Navbar />
       <Hero />
       <StatsBar />
+      <HowItWorks />
       <Features />
       <Testimonials />
+      <FAQ />
       <Footer />
     </main>
   );

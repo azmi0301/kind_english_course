@@ -1,12 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import BrandLogo from "@/components/ui/BrandLogo";
 import { supabase } from "@/lib/supabase";
 import { calculateITPScore } from "@/lib/scoreCalculator";
 import type { TestResult } from "@/lib/scoreCalculator";
 import ProgressChart from "@/components/dashboard/ProgressChart";
 import CertificateDownloader from "@/components/dashboard/CertificateDownloader";
-import Link from "next/link";
 import {
   BookOpen, BarChart3, History, Award,
   Headphones, AlignLeft, FileText, Home,
@@ -615,8 +616,8 @@ export default function DashboardPage() {
       {/* Sleek Vertical Navigation Bar */}
       <aside className="fixed left-0 top-0 bottom-0 w-20 bg-slate-950 flex flex-col items-center py-6 z-40 border-r border-slate-800 justify-between">
         <div className="flex flex-col items-center gap-8">
-          <Link href="/" className="w-11 h-11 rounded-2xl bg-[#007D07] flex items-center justify-center text-white shadow-lg shadow-emerald-950 hover:scale-105 transition-transform">
-            <BookOpen className="w-6 h-6" />
+          <Link href="/" className="hover:scale-105 transition-transform">
+            <BrandLogo size="md" />
           </Link>
 
           <nav className="flex flex-col gap-3">

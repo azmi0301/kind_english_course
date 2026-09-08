@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookOpen, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 function LoginForm() {
   const router = useRouter();
@@ -93,9 +94,7 @@ function LoginForm() {
         <div className="bg-white rounded-2xl shadow-2xl border border-neutral-100 p-8">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-[#007D07] flex items-center justify-center mb-4 shadow-brand">
-              <BookOpen className="w-7 h-7 text-white" />
-            </div>
+            <BrandLogo size="lg" className="mb-4 shadow-brand" />
             <h1 className="font-heading font-800 text-neutral-900 text-xl">Sign In</h1>
             <p className="text-sm text-neutral-500 mt-1">Kind English Course</p>
           </div>
