@@ -80,87 +80,122 @@ export default function StudentsPage() {
 
   const studentsWithExams = students.filter((s) => s.results && s.results.length > 0).length;
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     if (students.length === 0) {
       showToast("Tidak ada data siswa untuk diekspor.");
       return;
     }
 
-    const headers = [
-      "No",
-      "Nama Peserta",
-      "Email",
-      "Tanggal Daftar",
-      "Judul Ujian",
-      "Tipe Ujian",
-      "Listening (Scaled)",
-      "Structure (Scaled)",
-      "Reading (Scaled)",
-      "Total Skor ITP",
-      "Tanggal Ujian",
-      "Link Verifikasi Sertifikat",
-    ];
-
-    const rows: string[][] = [];
-    let rowNumber = 1;
     const origin = typeof window !== "undefined" ? window.location.origin : "";
+    let rowNumber = 1;
 
+    let tableRows = "";
     filtered.forEach((s) => {
       const regDate = s.created_at ? new Date(s.created_at).toLocaleDateString("id-ID") : "-";
       if (s.results && s.results.length > 0) {
         s.results.forEach((r) => {
           const examDate = r.submitted_at ? new Date(r.submitted_at).toLocaleDateString("id-ID") : "-";
           const verifyUrl = `${origin}/verify/${r.id}`;
-          rows.push([
-            String(rowNumber++),
-            `"${(s.name ?? "Peserta").replace(/"/g, '""')}"`,
-            `"${s.email.replace(/"/g, '""')}"`,
-            `"${regDate}"`,
-            `"${(r.exam_title || "TOEFL ITP").replace(/"/g, '""')}"`,
-            `"${r.exam_type || "ITP"}"`,
-            String(r.listening_scaled ?? "-"),
-            String(r.structure_scaled ?? "-"),
-            String(r.reading_scaled ?? "-"),
-            String(r.total_score ?? "-"),
-            `"${examDate}"`,
-            `"${verifyUrl}"`,
-          ]);
+          tableRows += `
+            <tr style="height: 28px;">
+              <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${rowNumber++}</td>
+              <td style="border: 1px solid #cbd5e1; font-weight: bold; padding: 6px;">${s.name ?? "Peserta"}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 6px;">${s.email}</td>
+              <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${regDate}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 6px;">${r.exam_title || "TOEFL ITP Institutional Test"}</td>
+              <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${r.exam_type || "ITP"}</td>
+              <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${r.listening_scaled ?? "-"}</td>
+              <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${r.structure_scaled ?? "-"}</td>
+              <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${r.reading_scaled ?? "-"}</td>
+              <td style="text-align: center; border: 1px solid #cbd5e1; font-weight: bold; color: #007D07; background-color: #E8F5E9; padding: 6px;">${r.total_score ?? "-"}</td>
+              <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${examDate}</td>
+              <td style="border: 1px solid #cbd5e1; padding: 6px;"><a href="${verifyUrl}" target="_blank" style="color: #0284c7;">${verifyUrl}</a></td>
+            </tr>
+          `;
         });
       } else {
-        rows.push([
-          String(rowNumber++),
-          `"${(s.name ?? "Peserta").replace(/"/g, '""')}"`,
-          `"${s.email.replace(/"/g, '""')}"`,
-          `"${regDate}"`,
-          `"Belum Mengikuti Ujian"`,
-          `"-"`,
-          `"-"`,
-          `"-"`,
-          `"-"`,
-          `"-"`,
-          `"-"`,
-          `"-"`,
-        ]);
+        tableRows += `
+          <tr style="height: 28px; background-color: #f8fafc;">
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${rowNumber++}</td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">${s.name ?? "Peserta"}</td>
+            <td style="border: 1px solid #cbd5e1; padding: 6px;">${s.email}</td>
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">${regDate}</td>
+            <td style="border: 1px solid #cbd5e1; color: #94a3b8; font-style: italic; padding: 6px;">Belum Mengikuti Ujian</td>
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">-</td>
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">-</td>
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">-</td>
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">-</td>
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">-</td>
+            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 6px;">-</td>
+            <td style="border: 1px solid #cbd5e1; color: #94a3b8; padding: 6px;">-</td>
+          </tr>
+        `;
       }
     });
 
-    const csvContent = "\uFEFF" + [
-      headers.join(","),
-      ...rows.map((row) => row.join(",")),
-    ].join("\r\n");
+    const excelTemplate = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Rekap Nilai TOEFL</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          th { font-family: Calibri, Arial, sans-serif; font-size: 11pt; }
+          td { font-family: Calibri, Arial, sans-serif; font-size: 10pt; vertical-align: middle; }
+        </style>
+      </head>
+      <body>
+        <h2 style="font-family: Calibri, Arial, sans-serif; color: #007D07; margin-bottom: 2px;">Kind English Course — Rekap Nilai TOEFL ITP</h2>
+        <p style="font-family: Calibri, Arial, sans-serif; font-size: 10pt; color: #64748b; margin-top: 0; margin-bottom: 12px;">Tanggal Unduh: ${new Date().toLocaleDateString("id-ID", { dateStyle: "full" })}</p>
+        <table border="1" style="border-collapse: collapse; border: 1px solid #cbd5e1;">
+          <thead>
+            <tr style="background-color: #007D07; color: #ffffff; height: 36px; text-align: center; font-weight: bold;">
+              <th style="border: 1px solid #005a05; padding: 8px 12px;">No</th>
+              <th style="border: 1px solid #005a05; padding: 8px 16px;">Nama Peserta</th>
+              <th style="border: 1px solid #005a05; padding: 8px 16px;">Email</th>
+              <th style="border: 1px solid #005a05; padding: 8px 12px;">Tanggal Daftar</th>
+              <th style="border: 1px solid #005a05; padding: 8px 16px;">Paket Ujian</th>
+              <th style="border: 1px solid #005a05; padding: 8px 10px;">Tipe</th>
+              <th style="border: 1px solid #005a05; padding: 8px 10px;">Listening</th>
+              <th style="border: 1px solid #005a05; padding: 8px 10px;">Structure</th>
+              <th style="border: 1px solid #005a05; padding: 8px 10px;">Reading</th>
+              <th style="border: 1px solid #005a05; padding: 8px 12px;">Total Skor</th>
+              <th style="border: 1px solid #005a05; padding: 8px 12px;">Tanggal Ujian</th>
+              <th style="border: 1px solid #005a05; padding: 8px 16px;">Link Verifikasi Sertifikat</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     const timestamp = new Date().toISOString().slice(0, 10);
     link.href = url;
-    link.setAttribute("download", `Rekap_Nilai_TOEFL_KindEnglish_${timestamp}.csv`);
+    link.setAttribute("download", `Rekap_Nilai_TOEFL_KindEnglish_${timestamp}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    showToast("File rekap nilai (.csv) berhasil diunduh ✓");
+    showToast("File Excel (.xls) berhasil diunduh dengan tabel rapi ✓");
   };
 
   return (
@@ -182,12 +217,12 @@ export default function StudentsPage() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={exportToCSV}
+            onClick={exportToExcel}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
-            title="Download Rekap Nilai ke Excel/CSV"
+            title="Download Rekap Nilai ke Excel"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>Ekspor Excel (.csv)</span>
+            <span>Ekspor Excel (.xls)</span>
           </button>
           <button
             onClick={loadData}
