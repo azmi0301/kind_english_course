@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Users, Search, ChevronDown, ChevronUp, Loader2,
   RefreshCw, Trash2, Calendar, Trophy, Award,
-  Sparkles, ExternalLink, CheckCircle2, QrCode
+  Sparkles, ExternalLink, CheckCircle2, QrCode, FileSpreadsheet, Download
 } from "lucide-react";
 import Link from "next/link";
 
@@ -80,32 +80,123 @@ export default function StudentsPage() {
 
   const studentsWithExams = students.filter((s) => s.results && s.results.length > 0).length;
 
+  const exportToCSV = () => {
+    if (students.length === 0) {
+      showToast("Tidak ada data siswa untuk diekspor.");
+      return;
+    }
+
+    const headers = [
+      "No",
+      "Nama Peserta",
+      "Email",
+      "Tanggal Daftar",
+      "Judul Ujian",
+      "Tipe Ujian",
+      "Listening (Scaled)",
+      "Structure (Scaled)",
+      "Reading (Scaled)",
+      "Total Skor ITP",
+      "Tanggal Ujian",
+      "Link Verifikasi Sertifikat",
+    ];
+
+    const rows: string[][] = [];
+    let rowNumber = 1;
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+    filtered.forEach((s) => {
+      const regDate = s.created_at ? new Date(s.created_at).toLocaleDateString("id-ID") : "-";
+      if (s.results && s.results.length > 0) {
+        s.results.forEach((r) => {
+          const examDate = r.submitted_at ? new Date(r.submitted_at).toLocaleDateString("id-ID") : "-";
+          const verifyUrl = `${origin}/verify/${r.id}`;
+          rows.push([
+            String(rowNumber++),
+            `"${(s.name ?? "Peserta").replace(/"/g, '""')}"`,
+            `"${s.email.replace(/"/g, '""')}"`,
+            `"${regDate}"`,
+            `"${(r.exam_title || "TOEFL ITP").replace(/"/g, '""')}"`,
+            `"${r.exam_type || "ITP"}"`,
+            String(r.listening_scaled ?? "-"),
+            String(r.structure_scaled ?? "-"),
+            String(r.reading_scaled ?? "-"),
+            String(r.total_score ?? "-"),
+            `"${examDate}"`,
+            `"${verifyUrl}"`,
+          ]);
+        });
+      } else {
+        rows.push([
+          String(rowNumber++),
+          `"${(s.name ?? "Peserta").replace(/"/g, '""')}"`,
+          `"${s.email.replace(/"/g, '""')}"`,
+          `"${regDate}"`,
+          `"Belum Mengikuti Ujian"`,
+          `"-"`,
+          `"-"`,
+          `"-"`,
+          `"-"`,
+          `"-"`,
+          `"-"`,
+          `"-"`,
+        ]);
+      }
+    });
+
+    const csvContent = "\uFEFF" + [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.setAttribute("download", `Rekap_Nilai_TOEFL_KindEnglish_${timestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showToast("File rekap nilai (.csv) berhasil diunduh ✓");
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header Bar */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold uppercase tracking-wider">
             <Users className="w-3.5 h-3.5" />
             Student Directory
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-            Data Peserta & Hasil Ujian
+            Data Peserta &amp; Hasil Ujian
           </h1>
           <p className="text-xs text-slate-500">
             Daftar seluruh siswa terdaftar, riwayat skor TOEFL ITP, dan tautan verifikasi sertifikat.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={exportToCSV}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs hover:shadow-md cursor-pointer"
+            title="Download Rekap Nilai ke Excel/CSV"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Ekspor Excel (.csv)</span>
+          </button>
           <button
             onClick={loadData}
-            className="p-3 rounded-2xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+            className="p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
             title="Refresh Data"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               value={search}
