@@ -8,20 +8,12 @@ interface BrandLogoProps {
   fallbackBg?: string;
 }
 
-const LOGO_CANDIDATES = [
-  "/logo.png",
-  "/logo.jpg",
-  "/logo.jpeg",
-  "/logo.webp",
-  "/logo.svg",
-];
-
 export default function BrandLogo({
   className = "",
   size = "md",
   fallbackBg = "bg-[#007D07]",
 }: BrandLogoProps) {
-  const [candidateIndex, setCandidateIndex] = useState(0);
+  const [hasError, setHasError] = useState(false);
 
   const sizeClasses = {
     xs: "w-7 h-7 rounded-lg",
@@ -39,20 +31,17 @@ export default function BrandLogo({
     xl: "w-8 h-8",
   };
 
-  const handleImgError = () => {
-    setCandidateIndex((prev) => prev + 1);
-  };
-
-  if (candidateIndex < LOGO_CANDIDATES.length) {
+  if (!hasError) {
     return (
       <div
-        className={`relative overflow-hidden flex items-center justify-center flex-shrink-0 ${sizeClasses[size]} ${className}`}
+        className={`relative overflow-hidden flex items-center justify-center flex-shrink-0 bg-white ${sizeClasses[size]} ${className}`}
       >
         <img
-          src={LOGO_CANDIDATES[candidateIndex]}
+          src="/logo.png"
           alt="Kind English Course Logo"
-          className="w-full h-full object-contain drop-shadow-xs"
-          onError={handleImgError}
+          className="w-full h-full object-cover"
+          onError={() => setHasError(true)}
+          loading="eager"
         />
       </div>
     );
@@ -66,3 +55,4 @@ export default function BrandLogo({
     </div>
   );
 }
+
