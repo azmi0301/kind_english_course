@@ -84,23 +84,37 @@ export default function CertificateDownloader({
       });
 
       doc.setFillColor(15, 23, 42);
-      doc.rect(12, 12, W - 24, 18, "F");
+      doc.rect(12, 12, W - 24, 20, "F");
+
+      // Embed Kind English Logo in Header if available
+      try {
+        const logoRes = await fetch("/logo.png");
+        if (logoRes.ok) {
+          const logoBlob = await logoRes.blob();
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(logoBlob);
+          });
+          doc.addImage(base64, "PNG", 16, 14, 16, 16);
+        }
+      } catch {}
 
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("KIND ENGLISH COURSE - CENTER FOR LANGUAGE ASSESSMENT", W / 2, 22.5, { align: "center" });
+      doc.text("KIND ENGLISH COURSE - CENTER FOR LANGUAGE ASSESSMENT", W / 2, 21.5, { align: "center" });
 
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(197, 160, 89);
-      doc.text("OFFICIAL TOEFL ITP TEST REPORT & CERTIFICATE", W / 2, 27, { align: "center" });
+      doc.text("OFFICIAL TOEFL ITP TEST REPORT & CERTIFICATE", W / 2, 26.5, { align: "center" });
 
       const certNo = `KEC-ITP-${result.id.slice(0, 8).toUpperCase()}`;
       doc.setFontSize(7.5);
       doc.setFont("courier", "normal");
       doc.setTextColor(100, 116, 139);
-      doc.text(`Document Ref: ${certNo}`, W - 20, 36, { align: "right" });
+      doc.text(`Document Ref: ${certNo}`, W - 20, 37, { align: "right" });
 
       doc.setTextColor(15, 23, 42);
       doc.setFontSize(26);
