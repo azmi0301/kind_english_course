@@ -27,35 +27,68 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [adminEmail, setAdminEmail] = useState("");
 
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+
     const checkAdmin = async () => {
       if (pathname === "/admin/login") {
-        setChecked(true);
+        if (isMounted) setChecked(true);
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      // Timeout fallback 4 detik agar tidak pernah stuck loading
+      timeoutId = setTimeout(() => {
+        if (isMounted && !checked) {
+          router.replace("/admin/login");
+        }
+      }, 4000);
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.replace("/admin/login");
+          return;
+        }
+
+        const res = await fetch("/api/admin/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: session.user.id }),
+        });
+
+        if (!res.ok) {
+          await supabase.auth.signOut();
+          router.replace("/admin/login");
+          return;
+        }
+
+        const { isAdmin } = await res.json();
+
+        if (!isAdmin) {
+          // Akun adalah siswa biasa, bukan admin
+          await supabase.auth.signOut();
+          router.replace("/admin/login");
+          return;
+        }
+
+        if (isMounted) {
+          setAdminEmail(session.user.email ?? "");
+          setChecked(true);
+        }
+      } catch (err) {
+        console.error("Admin verification error:", err);
         router.replace("/admin/login");
-        return;
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      const res = await fetch("/api/admin/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: session.user.id }),
-      });
-      const { isAdmin } = await res.json();
-
-      if (!isAdmin) {
-        await supabase.auth.signOut();
-        router.replace("/admin/login");
-        return;
-      }
-
-      setAdminEmail(session.user.email ?? "");
-      setChecked(true);
     };
+
     checkAdmin();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [router, pathname]);
 
   const handleLogout = async () => {
@@ -65,10 +98,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!checked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950">
-        <div className="flex flex-col items-center gap-3">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
+        <div className="flex flex-col items-center gap-3 text-center">
           <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-slate-400 font-mono tracking-wider">Memverifikasi Hak Akses...</span>
+          <button
+            onClick={() => router.replace("/admin/login")}
+            className="text-[11px] text-emerald-500/80 hover:text-emerald-400 hover:underline cursor-pointer mt-1 font-mono"
+          >
+            Beralih ke Login Admin →
+          </button>
         </div>
       </div>
     );
