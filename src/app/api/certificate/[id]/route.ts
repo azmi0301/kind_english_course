@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
-import { calculateITPScore } from "@/lib/scoreCalculator";
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 
@@ -18,27 +17,14 @@ export async function GET(
     .eq("id", id)
     .single();
 
-  let studentName = "STUDENT NAME";
+  let studentName = "NDC_OLAP";
   let submittedDate = new Date();
 
   if (result) {
     const profile = Array.isArray(result.profiles) ? result.profiles[0] : result.profiles;
-    studentName = profile?.name || profile?.email?.split("@")[0] || "STUDENT NAME";
+    studentName = profile?.name || profile?.email?.split("@")[0] || "NDC_OLAP";
     submittedDate = result.submitted_at ? new Date(result.submitted_at) : new Date();
   }
-
-  // Hitung skor resmi
-  const scores = calculateITPScore(
-    result?.listening_raw ?? 0, result?.listening_total ?? 50,
-    result?.structure_raw ?? 0, result?.structure_total ?? 40,
-    result?.reading_raw ?? 0, result?.reading_total ?? 50
-  );
-
-  const totalScore = result?.total_score || scores.total;
-  const listeningScaled = result?.listening_scaled || scores.listening.scaled;
-  const structureScaled = result?.structure_scaled || scores.structure.scaled;
-  const readingScaled = result?.reading_scaled || scores.reading.scaled;
-  const cefrLevel = scores.level;
 
   // 2. Generate Verification QR Code
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
@@ -54,7 +40,7 @@ export async function GET(
     },
   });
 
-  // 3. Buat PDF Sertifikat Formal & Ultra-Professional
+  // 3. Buat PDF Sertifikat Presisi Sesuai Desain Acuan
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
@@ -64,329 +50,265 @@ export async function GET(
   const W = doc.internal.pageSize.getWidth();  // 297 mm
   const H = doc.internal.pageSize.getHeight(); // 210 mm
 
-  // Background Canvas
+  // Clean White Background Canvas
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, W, H, "F");
 
-  // Warm Ivory Certificate Background
-  doc.setFillColor(253, 253, 250);
-  doc.rect(5, 5, W - 10, H - 10, "F");
+  // Subtle Background Watermark Concentric Waves (Left & Right)
+  doc.setDrawColor(241, 238, 230);
+  doc.setLineWidth(0.25);
+  for (let r = 25; r <= 95; r += 10) {
+    doc.ellipse(0, H / 2, r, r * 1.5);
+    doc.ellipse(W, H / 2, r, r * 1.5);
+  }
 
-  // Triple Ornate Borders (Navy, Gold, Green)
-  doc.setDrawColor(15, 23, 42); // Navy
-  doc.setLineWidth(1.2);
-  doc.rect(8, 8, W - 16, H - 16);
+  // --- Top-Left Luxury Corner Ribbons ---
+  doc.setFillColor(212, 175, 55); // Gold base
+  doc.triangle(0, 0, 52, 0, 0, 52, "F");
 
-  doc.setDrawColor(197, 160, 89); // Gold
+  doc.setFillColor(15, 23, 42); // Navy primary triangle
+  doc.triangle(0, 0, 44, 0, 0, 44, "F");
+
+  doc.setDrawColor(212, 175, 55); // Gold stripe
+  doc.setLineWidth(1.4);
+  doc.line(0, 56, 56, 0);
+
+  doc.setDrawColor(15, 23, 42); // Navy accent stripe
+  doc.setLineWidth(3);
+  doc.line(0, 63, 63, 0);
+
+  doc.setDrawColor(212, 175, 55); // Thin gold accent
+  doc.setLineWidth(0.7);
+  doc.line(0, 68, 68, 0);
+
+  // --- Bottom-Right Luxury Corner Ribbons ---
+  doc.setFillColor(212, 175, 55); // Gold base
+  doc.triangle(W, H, W - 52, H, W, H - 52, "F");
+
+  doc.setFillColor(15, 23, 42); // Navy primary triangle
+  doc.triangle(W, H, W - 44, H, W, H - 44, "F");
+
+  doc.setDrawColor(212, 175, 55); // Gold stripe
+  doc.setLineWidth(1.4);
+  doc.line(W, H - 56, W - 56, H);
+
+  doc.setDrawColor(15, 23, 42); // Navy accent stripe
+  doc.setLineWidth(3);
+  doc.line(W, H - 63, W - 63, H);
+
+  doc.setDrawColor(212, 175, 55); // Thin gold accent
+  doc.setLineWidth(0.7);
+  doc.line(W, H - 68, W - 68, H);
+
+  // --- Thin Gold Inner Margin Border ---
+  doc.setDrawColor(197, 160, 89);
   doc.setLineWidth(0.6);
-  doc.rect(10.5, 10.5, W - 21, H - 21);
+  doc.rect(10, 10, W - 20, H - 20);
 
-  doc.setDrawColor(0, 125, 7); // Emerald Green Accent
-  doc.setLineWidth(0.3);
-  doc.rect(12, 12, W - 24, H - 24);
-
-  // Ornate Corner Accents
-  const cornerSize = 7;
-  const corners = [
-    [12, 12],
-    [W - 12 - cornerSize, 12],
-    [12, H - 12 - cornerSize],
-    [W - 12 - cornerSize, H - 12 - cornerSize],
-  ];
-  doc.setFillColor(197, 160, 89);
-  corners.forEach(([cx, cy]) => {
-    doc.rect(cx, cy, cornerSize, cornerSize, "F");
-    doc.setFillColor(15, 23, 42);
-    doc.rect(cx + 1.5, cy + 1.5, cornerSize - 3, cornerSize - 3, "F");
-    doc.setFillColor(197, 160, 89);
-  });
-
-  // --- HEADER SECTION ---
-  // Logo on Left
+  // --- TOP HEADER (Left & Right) ---
+  // Left: Logo + Vertical Line + Institutional Branding
+  const headerY = 16;
   try {
     const fs = await import("fs");
     const path = await import("path");
     const logoPath = path.join(process.cwd(), "public", "logo.png");
     if (fs.existsSync(logoPath)) {
       const logoData = `data:image/png;base64,${fs.readFileSync(logoPath).toString("base64")}`;
-      doc.addImage(logoData, "PNG", 18, 15, 18, 18);
+      doc.addImage(logoData, "PNG", 24, headerY - 3, 20, 20);
     }
   } catch (err) {
     console.warn("Logo load error in certificate:", err);
   }
 
-  // Header Institution Title (Centered)
-  doc.setTextColor(15, 23, 42);
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.text("KIND ENGLISH COURSE", W / 2, 21, { align: "center" });
+  // Vertical Separator Bar
+  doc.setDrawColor(197, 160, 89);
+  doc.setLineWidth(0.8);
+  doc.line(48, headerY - 2, 48, headerY + 18);
 
-  doc.setFontSize(8.5);
+  // Institution Text Stack
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("KIND ENGLISH COURSE", 52, headerY + 2.5);
+
+  doc.setFontSize(7.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(180, 140, 50); // Gold
-  doc.text("CENTER FOR LANGUAGE ASSESSMENT & CERTIFICATION", W / 2, 26, { align: "center" });
+  doc.text("CENTER FOR LANGUAGE ASSESSMENT", 52, headerY + 7.5);
 
-  doc.setFontSize(7.5);
+  doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Kampung Inggris Pare • Kediri, Jawa Timur • Website: kindenglish.id", W / 2, 30, { align: "center" });
+  doc.setTextColor(197, 160, 89);
+  doc.text("OFFICIAL TOEFL ITP TEST REPORT & CERTIFICATE", 52, headerY + 12);
 
-  // Document Reference ID (Top Right)
+  // Right Header: Document Ref Box
   const certNo = `KEC-ITP-${id.slice(0, 8).toUpperCase()}`;
   doc.setFontSize(7.5);
-  doc.setFont("courier", "bold");
-  doc.setTextColor(71, 85, 105);
-  doc.text(`Document Ref: ${certNo}`, W - 18, 20, { align: "right" });
-  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 125, 7);
-  doc.text("STATUS: AUTHENTICATED", W - 18, 24.5, { align: "right" });
+  doc.setTextColor(71, 85, 105);
+  doc.text("Document Ref:", W - 24, headerY + 2.5, { align: "right" });
 
-  // Divider Line Under Header
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text(certNo, W - 24, headerY + 7.5, { align: "right" });
+
+  doc.setDrawColor(197, 160, 89);
+  doc.setLineWidth(0.5);
+  doc.line(W - 48, headerY + 10, W - 24, headerY + 10);
+
+  // --- MAIN CERTIFICATE TITLE ---
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(23);
+  doc.setFont("helvetica", "bold");
+  doc.text("CERTIFICATE OF ACHIEVEMENT", W / 2, 46, { align: "center" });
+
+  // Elegant Gold Center Ornament
   doc.setDrawColor(197, 160, 89);
   doc.setLineWidth(0.7);
-  doc.line(18, 34, W - 18, 34);
+  doc.line(W / 2 - 42, 51, W / 2 - 4, 51);
+  doc.line(W / 2 + 4, 51, W / 2 + 42, 51);
+  doc.setFillColor(197, 160, 89);
+  // Diamond in center
+  doc.triangle(W / 2, 49.5, W / 2 - 2, 51, W / 2 + 2, 51, "F");
+  doc.triangle(W / 2, 52.5, W / 2 - 2, 51, W / 2 + 2, 51, "F");
 
-  // --- CERTIFICATE MAIN TITLE ---
-  doc.setTextColor(15, 23, 42);
-  doc.setFontSize(21);
-  doc.setFont("helvetica", "bold");
-  doc.text("CERTIFICATE OF ACHIEVEMENT", W / 2, 43, { align: "center" });
-
+  // Statement text
   doc.setFontSize(8.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(180, 140, 50);
-  doc.text("TEST OF ENGLISH AS A FOREIGN LANGUAGE (TOEFL ITP® SIMULATION)", W / 2, 48, { align: "center" });
-
-  // Statement Intro
-  doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("This is to certify that the individual named below has successfully completed the examination:", W / 2, 55, { align: "center" });
+  doc.setTextColor(71, 85, 105);
+  doc.text("This is to certify that the individual named below has successfully completed", W / 2, 57, { align: "center" });
+  doc.text("the official examination", W / 2, 61, { align: "center" });
 
   // --- PARTICIPANT NAME ---
-  doc.setFontSize(19);
+  doc.setFontSize(21);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
   const uppercaseName = studentName.toUpperCase();
-  doc.text(uppercaseName, W / 2, 64, { align: "center" });
+  doc.text(uppercaseName, W / 2, 72, { align: "center" });
 
-  const nameWidth = Math.min(doc.getTextWidth(uppercaseName), 180);
+  // Refined Gold Underline for Name
+  const nameWidth = Math.min(doc.getTextWidth(uppercaseName), 140);
   doc.setDrawColor(197, 160, 89);
-  doc.setLineWidth(0.6);
-  doc.line(W / 2 - nameWidth / 2 - 8, 66.5, W / 2 + nameWidth / 2 + 8, 66.5);
+  doc.setLineWidth(0.9);
+  doc.line(W / 2 - nameWidth / 2 - 6, 75.5, W / 2 + nameWidth / 2 + 6, 75.5);
 
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("has demonstrated English language proficiency with the following official scaled scores:", W / 2, 72, { align: "center" });
+  // Exam Name
+  doc.setFontSize(9.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text("TOEFL ITP INSTITUTIONAL TEST", W / 2, 83, { align: "center" });
 
-  // --- SCORE REPORT & QR CODE BENTO BOX (Y: 76 to 134) ---
-  const boxX = 18;
-  const boxY = 76;
-  const boxW = W - 36; // 261 mm
-  const boxH = 58;
+  // --- CENTRAL QR CODE & SCORE REPORT CARD (Exact user layout) ---
+  const boxX = 36;
+  const boxY = 89;
+  const boxW = W - 72; // 225 mm
+  const boxH = 48;
 
-  // Box background
+  // Outer Rounded Box
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(203, 213, 225);
   doc.setLineWidth(0.5);
   doc.roundedRect(boxX, boxY, boxW, boxH, 3, 3, "FD");
 
-  // Inner Box Title
-  doc.setFillColor(15, 23, 42);
-  doc.roundedRect(boxX, boxY, boxW, 8.5, 3, 3, "F");
-  doc.rect(boxX, boxY + 4, boxW, 4.5, "F"); // Flatten bottom corners of header
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.text("OFFICIAL SECTION SCORE BREAKDOWN & PERFORMANCE REPORT", boxX + 6, boxY + 5.8);
-  doc.setFontSize(7);
-  doc.setTextColor(197, 160, 89);
-  doc.text("STANDARD ITP SCALING (310 - 677)", boxX + boxW - 6, boxY + 5.8, { align: "right" });
+  // Left QR Code Frame with Gold Border
+  const qrX = boxX + 6;
+  const qrY = boxY + 5.5;
+  const qrSize = 37;
+  doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
-  // 3 Section Cards + 1 Total Score Card
-  const colW = 44;
-  const colGap = 4;
-  const startCardX = boxX + 6;
-  const cardY = boxY + 12;
-  const cardH = 39;
+  doc.setDrawColor(197, 160, 89);
+  doc.setLineWidth(0.6);
+  doc.roundedRect(qrX - 1, qrY - 1, qrSize + 2, qrSize + 2, 1, 1);
 
-  // Section 1: Listening
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(startCardX, cardY, colW, cardH, 2, 2, "FD");
-  doc.setFillColor(147, 51, 234); // Purple top accent
-  doc.rect(startCardX, cardY, colW, 2.5, "F");
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(147, 51, 234);
-  doc.text("SECTION 1", startCardX + colW / 2, cardY + 7, { align: "center" });
-  doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("Listening", startCardX + colW / 2, cardY + 11.5, { align: "center" });
-  doc.text("Comprehension", startCardX + colW / 2, cardY + 15, { align: "center" });
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(147, 51, 234);
-  doc.text(`${listeningScaled}`, startCardX + colW / 2, cardY + 25, { align: "center" });
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Scaled Score (Max 68)", startCardX + colW / 2, cardY + 31, { align: "center" });
-  doc.text("50 Questions • 35 Min", startCardX + colW / 2, cardY + 35, { align: "center" });
-
-  // Section 2: Structure
-  const card2X = startCardX + colW + colGap;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(card2X, cardY, colW, cardH, 2, 2, "FD");
-  doc.setFillColor(37, 99, 235); // Blue top accent
-  doc.rect(card2X, cardY, colW, 2.5, "F");
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(37, 99, 235);
-  doc.text("SECTION 2", card2X + colW / 2, cardY + 7, { align: "center" });
-  doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("Structure & Written", card2X + colW / 2, cardY + 11.5, { align: "center" });
-  doc.text("Expression", card2X + colW / 2, cardY + 15, { align: "center" });
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(37, 99, 235);
-  doc.text(`${structureScaled}`, card2X + colW / 2, cardY + 25, { align: "center" });
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Scaled Score (Max 68)", card2X + colW / 2, cardY + 31, { align: "center" });
-  doc.text("40 Questions • 25 Min", card2X + colW / 2, cardY + 35, { align: "center" });
-
-  // Section 3: Reading
-  const card3X = card2X + colW + colGap;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(card3X, cardY, colW, cardH, 2, 2, "FD");
-  doc.setFillColor(5, 150, 105); // Emerald top accent
-  doc.rect(card3X, cardY, colW, 2.5, "F");
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(5, 150, 105);
-  doc.text("SECTION 3", card3X + colW / 2, cardY + 7, { align: "center" });
-  doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("Reading", card3X + colW / 2, cardY + 11.5, { align: "center" });
-  doc.text("Comprehension", card3X + colW / 2, cardY + 15, { align: "center" });
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(5, 150, 105);
-  doc.text(`${readingScaled}`, card3X + colW / 2, cardY + 25, { align: "center" });
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Scaled Score (Max 67)", card3X + colW / 2, cardY + 31, { align: "center" });
-  doc.text("50 Questions • 55 Min", card3X + colW / 2, cardY + 35, { align: "center" });
-
-  // Total Score Card (Grand Gold Badge)
-  const card4X = card3X + colW + colGap;
-  const card4W = 54;
-  doc.setFillColor(255, 251, 235); // Warm gold tint
+  // Vertical Gold Accent Line next to QR Code
+  const textLeft = qrX + qrSize + 8;
   doc.setDrawColor(197, 160, 89);
   doc.setLineWidth(0.8);
-  doc.roundedRect(card4X, cardY, card4W, cardH, 2, 2, "FD");
-  doc.setFillColor(180, 140, 50);
-  doc.rect(card4X, cardY, card4W, 2.5, "F");
-  doc.setFontSize(7.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(180, 140, 50);
-  doc.text("TOTAL ITP SCORE", card4X + card4W / 2, cardY + 7, { align: "center" });
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(0, 125, 7);
-  doc.text(`${totalScore}`, card4X + card4W / 2, cardY + 17, { align: "center" });
+  doc.line(textLeft - 3, boxY + 8, textLeft - 3, boxY + 40);
 
-  doc.setFillColor(0, 125, 7);
-  doc.roundedRect(card4X + 4, cardY + 20, card4W - 8, 7, 1.5, 1.5, "F");
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text(cefrLevel.toUpperCase(), card4X + card4W / 2, cardY + 24.5, { align: "center" });
-
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Official CEFR Equivalent", card4X + card4W / 2, cardY + 32, { align: "center" });
-  doc.text("Score Range: 310 - 677", card4X + card4W / 2, cardY + 35.5, { align: "center" });
-
-  // QR Code & Security Column (Far Right inside Box)
-  const qrX = card4X + card4W + 5;
-  const qrSize = 29;
-  doc.addImage(qrDataUrl, "PNG", qrX, cardY + 1, qrSize, qrSize);
-  doc.setDrawColor(197, 160, 89);
-  doc.setLineWidth(0.4);
-  doc.rect(qrX - 0.5, cardY + 0.5, qrSize + 1, qrSize + 1);
-
-  doc.setFontSize(6);
+  // Box Header Text
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
-  doc.text("SCAN TO VERIFY", qrX + qrSize / 2, cardY + 33, { align: "center" });
-  doc.setFontSize(5.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 125, 7);
-  doc.text(`ID: ${id.slice(0, 8)}`, qrX + qrSize / 2, cardY + 36, { align: "center" });
+  doc.text("OFFICIAL DIGITAL SCORE REPORT & VERIFICATION", textLeft, boxY + 12);
 
-  // --- FOOTER & SIGNATURE SECTION (Y: 140 to 195) ---
-  const footerY = 144;
+  // Explanation Text
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Scan this QR barcode to access the authenticated score report,", textLeft, boxY + 18);
+  doc.text("including full section breakdown (Listening, Structure, Reading),", textLeft, boxY + 23);
+  doc.text("total scaled score (310-677), and CEFR proficiency evaluation.", textLeft, boxY + 28);
+
+  // Verification Pill Badge
+  const pillY = boxY + 33;
+  const pillW = 120;
+  const pillH = 7.5;
+  doc.setFillColor(254, 243, 199); // Warm Gold/Amber Tint
+  doc.setDrawColor(245, 158, 11);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(textLeft, pillY, pillW, pillH, 2, 2, "FD");
+
+  // Checkmark circle in badge
+  doc.setFillColor(15, 23, 42);
+  doc.circle(textLeft + 4.5, pillY + 3.75, 2, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(4.5);
+  doc.setFont("helvetica", "bold");
+  doc.text("✓", textLeft + 3.6, pillY + 4.6);
+
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Verification Portal: kindenglish.id/verify/${id.slice(0, 8)}`, textLeft + 9, pillY + 5);
+
+  // --- FOOTER SECTION ---
+  const footerY = 153;
   const dateStr = submittedDate.toLocaleDateString("id-ID", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-  // Left Column: Credentials & Security Info
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text("Verification & Validity Details:", 20, footerY + 5);
-
+  // Left Column: Issued Date & Security
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(71, 85, 105);
-  doc.text(`Issue Date        : ${dateStr}`, 20, footerY + 10);
-  doc.text(`Center Code     : KEC-PARE-ID01`, 20, footerY + 14.5);
-  doc.text(`Security Hash  : SHA256-ENCRYPTED-VERIFIED`, 20, footerY + 19);
-  doc.text(`Online Portal    : kindenglish.id/verify/${id.slice(0, 8)}`, 20, footerY + 23.5);
 
-  // Center Column: Gold Embossed Seal
-  const sealX = W / 2;
-  const sealY = footerY + 15;
-  doc.setFillColor(197, 160, 89);
-  doc.setDrawColor(180, 140, 50);
-  doc.circle(sealX, sealY, 14, "FD");
-  doc.setFillColor(15, 23, 42);
-  doc.circle(sealX, sealY, 11.5, "F");
-  doc.setFillColor(255, 255, 255);
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "bold");
-  doc.text("KIND ENGLISH", sealX, sealY - 4, { align: "center" });
-  doc.setFontSize(5.5);
-  doc.setTextColor(197, 160, 89);
-  doc.text("★ OFFICIAL ★", sealX, sealY, { align: "center" });
-  doc.setFontSize(6.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text("SEAL & STAMP", sealX, sealY + 4, { align: "center" });
-  doc.setFontSize(5);
-  doc.setTextColor(197, 160, 89);
-  doc.text("PARE - KEDIRI", sealX, sealY + 7.5, { align: "center" });
+  // Date icon box
+  doc.setDrawColor(203, 213, 225);
+  doc.rect(24, footerY + 1.5, 4.5, 4.5);
+  doc.text(`Issued Date: ${dateStr}`, 32, footerY + 5);
 
-  // Right Column: Authorized Signature
-  const sigX = W - 78;
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
+  // Lock icon box
+  doc.rect(24, footerY + 8.5, 4.5, 4.5);
+  doc.text("Security: ENCRYPTED DIGITAL HASH", 32, footerY + 12);
+
+  // Center Column: Elegant Script Motto
+  doc.setDrawColor(197, 160, 89);
+  doc.setLineWidth(0.5);
+  doc.line(W / 2 - 32, footerY + 5, W / 2 - 18, footerY + 5);
+  doc.line(W / 2 + 18, footerY + 5, W / 2 + 32, footerY + 5);
+
+  doc.setFont("times", "italic");
+  doc.setFontSize(14);
   doc.setTextColor(15, 23, 42);
-  doc.text("Authorized Signature:", sigX, footerY + 5);
+  doc.text("Kind English", W / 2, footerY + 6.5, { align: "center" });
 
-  // Check if custom signature image exists in public/signature.png
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6);
+  doc.setTextColor(100, 116, 139);
+  doc.text("LEARN   •   GROW   •   SUCCEED", W / 2, footerY + 12, { align: "center" });
+
+  // Right Column: Signature
+  const sigX = W - 66;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Authorized Signature:", sigX, footerY + 1);
+
+  // Load custom signature image if available
   let sigLoaded = false;
   try {
     const fs = await import("fs");
@@ -394,43 +316,29 @@ export async function GET(
     const sigPath = path.join(process.cwd(), "public", "signature.png");
     if (fs.existsSync(sigPath)) {
       const sigData = `data:image/png;base64,${fs.readFileSync(sigPath).toString("base64")}`;
-      doc.addImage(sigData, "PNG", sigX + 5, footerY + 6, 42, 14);
+      doc.addImage(sigData, "PNG", sigX, footerY + 2, 38, 12);
       sigLoaded = true;
     }
   } catch (err) {
     console.warn("Signature image load error:", err);
   }
 
-  // If no signature image yet, draw professional academic director cursive line
+  // Fallback signature flourish if image not uploaded yet
   if (!sigLoaded) {
     doc.setFont("times", "italic");
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setTextColor(15, 23, 42);
-    doc.text("Kind English Director", sigX + 12, footerY + 15);
+    doc.text("Afis", sigX + 10, footerY + 10);
   }
 
-  doc.setDrawColor(148, 163, 184);
+  doc.setDrawColor(15, 23, 42);
   doc.setLineWidth(0.5);
-  doc.line(sigX, footerY + 21, sigX + 60, footerY + 21);
+  doc.line(sigX - 4, footerY + 14, sigX + 42, footerY + 14);
 
-  doc.setFontSize(8.5);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text("Academic Director", sigX, footerY + 26);
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Kind English Course Assessment Board", sigX, footerY + 30);
-
-  // Bottom Notice
   doc.setFontSize(6.5);
-  doc.setTextColor(148, 163, 184);
-  doc.text(
-    "This certificate is issued as an authenticated report of English proficiency test results administered by Kind English Course. Verification available online.",
-    W / 2,
-    H - 14,
-    { align: "center" }
-  );
+  doc.setTextColor(15, 23, 42);
+  doc.text("KIND ENGLISH COURSE", sigX + 19, footerY + 18, { align: "center" });
 
   const pdfArrayBuffer = doc.output("arraybuffer");
   const filename = `KEC-Official-Certificate-${studentName.replace(/\s+/g, "_")}.pdf`;
