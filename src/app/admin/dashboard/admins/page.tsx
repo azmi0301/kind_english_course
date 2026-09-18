@@ -5,10 +5,12 @@ import {
   Shield, User, Search, Loader2, CheckCircle2, XCircle, Crown, RefreshCw,
   UserCheck, ShieldAlert, Sparkles, AlertCircle
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface UserRow {
   id: string;
-  full_name: string | null;
+  name: string | null;
+  full_name?: string | null;
   email: string;
   role: "admin" | "student";
   created_at: string;
@@ -29,18 +31,24 @@ export default function AdminsPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
-    fetch("/api/admin/auth/check")
-      .then((r) => r.json())
-      .then(({ isAdmin, userId }) => {
-        if (!isAdmin) { router.replace("/admin/login"); return; }
-        setCurrentUserId(userId);
-        return fetch("/api/admin/admins");
-      })
-      .then((r) => r?.json())
-      .then(({ users }) => { setUsers(users ?? []); setLoading(false); })
-      .catch(() => setLoading(false));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace("/admin/login");
+        return;
+      }
+      setCurrentUserId(session.user.id);
+
+      const res = await fetch("/api/admin/admins");
+      const json = await res.json();
+      setUsers(json.users ?? []);
+    } catch {
+      showToast("Gagal memuat data administrator.", false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
@@ -53,7 +61,7 @@ export default function AdminsPage() {
     const res = await fetch("/api/admin/admins", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id, role: newRole }),
+      body: JSON.stringify({ userId: user.id, role: newRole, requesterId: currentUserId }),
     });
     const json = await res.json();
     if (json.success) {
@@ -67,7 +75,7 @@ export default function AdminsPage() {
 
   const filtered = users.filter((u) =>
     !search ||
-    (u.full_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+    (u.name ?? u.full_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -164,16 +172,17 @@ export default function AdminsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {admins.map((u) => {
                     const isSelf = u.id === currentUserId;
+                    const displayName = u.name || u.full_name || u.email.split("@")[0];
                     return (
                       <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-2xl bg-amber-500 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
-                              {(u.full_name || u.email).charAt(0).toUpperCase()}
+                              {displayName.charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
                               <span className="font-bold text-slate-900 block truncate">
-                                {u.full_name || u.email.split("@")[0]} {isSelf && <span className="text-[10px] text-emerald-600 font-semibold">(Akun Anda)</span>}
+                                {displayName} {isSelf && <span className="text-[10px] text-emerald-600 font-semibold">(Akun Anda)</span>}
                               </span>
                               <span className="text-[11px] text-slate-400 block truncate">{u.email}</span>
                             </div>
@@ -193,7 +202,7 @@ export default function AdminsPage() {
                             <button
                               onClick={() => setConfirmTarget({ user: u, action: "demote" })}
                               disabled={updating === u.id}
-                              className="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold transition-all disabled:opacity-50"
+                              className="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold transition-all disabled:opacity-50 cursor-pointer"
                             >
                               Cabut Hak Admin
                             </button>
@@ -223,48 +232,51 @@ export default function AdminsPage() {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="py-4 px-6">Nama & Email Siswa</th>
+                      <th className="py-4 px-6">Nama &amp; Email Siswa</th>
                       <th className="py-4 px-4">Role Saat Ini</th>
                       <th className="py-4 px-4">Bergabung</th>
                       <th className="py-4 px-6 text-right">Aksi Promosi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {students.slice(0, 15).map((u) => (
-                      <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-2xl bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center flex-shrink-0">
-                              {(u.full_name || u.email).charAt(0).toUpperCase()}
+                    {students.slice(0, 15).map((u) => {
+                      const displayName = u.name || u.full_name || u.email.split("@")[0];
+                      return (
+                        <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-2xl bg-slate-100 text-slate-600 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                                {displayName.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-900 block truncate">
+                                  {displayName}
+                                </span>
+                                <span className="text-[11px] text-slate-400 block truncate">{u.email}</span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <span className="font-bold text-slate-900 block truncate">
-                                {u.full_name || u.email.split("@")[0]}
-                              </span>
-                              <span className="text-[11px] text-slate-400 block truncate">{u.email}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
-                            Student
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-slate-500">
-                          {new Date(u.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                        </td>
-                        <td className="py-4 px-6 text-right whitespace-nowrap">
-                          <button
-                            onClick={() => setConfirmTarget({ user: u, action: "promote" })}
-                            disabled={updating === u.id}
-                            className="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-[#007D07] hover:bg-emerald-100 border border-emerald-200 text-[11px] font-bold transition-all disabled:opacity-50 inline-flex items-center gap-1"
-                          >
-                            <Crown className="w-3.5 h-3.5" />
-                            Jadikan Admin
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                              Student
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-slate-500">
+                            {new Date(u.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                          </td>
+                          <td className="py-4 px-6 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => setConfirmTarget({ user: u, action: "promote" })}
+                              disabled={updating === u.id}
+                              className="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-[#007D07] hover:bg-emerald-100 border border-emerald-200 text-[11px] font-bold transition-all disabled:opacity-50 inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <Crown className="w-3.5 h-3.5" />
+                              Jadikan Admin
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
