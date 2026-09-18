@@ -168,18 +168,43 @@ export default function DashboardPage() {
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950 text-white p-8 md:p-10 shadow-xl border border-slate-800">
         <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="space-y-3 max-w-xl">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               Official Institutional Assessment
             </div>
-            <h2 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
-              Selamat Datang, <span className="text-emerald-400">{studentName}</span>!
+            <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight">
+              <span className="text-white">Selamat Datang, </span>
+              <span className="text-emerald-400">{studentName}</span>
+              <span className="text-white">!</span>
             </h2>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-slate-300 leading-relaxed max-w-lg">
               Persiapkan dirimu untuk mengikuti ujian resmi TOEFL ITP Institutional Test. Seluruh hasil tersimpan otomatis dan sertifikat resmi dapat langsung diunduh setelah ujian.
             </p>
+          </div>
+
+          {/* Quick Assessment Meta Pills on Right */}
+          <div className="flex flex-col sm:flex-row md:flex-col gap-3 flex-shrink-0">
+            <div className="px-4 py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center gap-3.5 text-xs text-white shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-300 uppercase tracking-wider block font-semibold leading-tight">Durasi Ujian Resmi</span>
+                <span className="font-extrabold text-white text-xs">115 Menit • 140 Soal</span>
+              </div>
+            </div>
+
+            <div className="px-4 py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center gap-3.5 text-xs text-white shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center flex-shrink-0">
+                <Award className="w-4.5 h-4.5" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-300 uppercase tracking-wider block font-semibold leading-tight">Sertifikasi Nilai</span>
+                <span className="font-extrabold text-white text-xs">Otomatis & QR Barcode</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
