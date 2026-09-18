@@ -169,7 +169,7 @@ export default function DashboardPage() {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950 text-white p-8 md:p-10 shadow-xl border border-slate-800">
         <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-xl">
+          <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               Official Institutional Assessment
@@ -180,16 +180,6 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-300 leading-relaxed">
               Persiapkan dirimu untuk mengikuti ujian resmi TOEFL ITP Institutional Test. Seluruh hasil tersimpan otomatis dan sertifikat resmi dapat langsung diunduh setelah ujian.
             </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
-            <Link
-              href="/exam/itp-full-sim-01"
-              className="inline-flex items-center justify-center gap-2.5 px-7 py-4 bg-[#007D07] hover:bg-[#006A06] text-white text-sm font-bold rounded-2xl shadow-lg shadow-emerald-900/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Play className="w-4 h-4 fill-white" />
-              Mulai Ujian TOEFL ITP
-            </Link>
           </div>
         </div>
       </div>
