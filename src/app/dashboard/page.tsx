@@ -150,34 +150,34 @@ export default function DashboardPage() {
     }
 
     async function loadData() {
-      // 1. Cek session saat ini
+      // 1. Coba ambil session langsung
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (session) {
-        fetchUserData(session.user.id);
+      if (session?.user) {
+        if (isMounted) fetchUserData(session.user.id);
         return;
       }
 
-      // 2. Jika belum ada session, pasang auth listener untuk inisialisasi
-      const { data: authListener } = supabase.auth.onAuthStateChange((event, currentSession) => {
-        if (currentSession && isMounted) {
+      // 2. Dengarkan event auth state change jika session sedang di-load dari storage
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+        if (currentSession?.user && isMounted) {
           fetchUserData(currentSession.user.id);
-        } else if (event === "SIGNED_OUT" && isMounted) {
+        } else if (event === "SIGNED_OUT" && isMounted && !loading) {
           window.location.href = "/auth/login";
         }
       });
 
-      // 3. Fallback timeout 1.5 detik jika benar-benar tidak ada sesi
+      // 3. Fallback pemeriksaan ulang setelah 3 detik
       const timeoutId = setTimeout(async () => {
         if (isMounted) {
           const { data: { session: retrySession } } = await supabase.auth.getSession();
-          if (!retrySession && isMounted) {
-            window.location.href = "/auth/login";
-          } else if (retrySession && isMounted) {
+          if (retrySession?.user) {
             fetchUserData(retrySession.user.id);
+          } else if (isMounted) {
+            window.location.href = "/auth/login";
           }
         }
-      }, 1500);
+      }, 3000);
 
       return () => {
         authListener.subscription.unsubscribe();
@@ -190,7 +190,7 @@ export default function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [router, loading]);
 
   const latest = results[0];
   const itpResults = results.filter((r) => r.examType === "ITP");

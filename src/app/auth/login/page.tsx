@@ -16,91 +16,76 @@ function LoginForm() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    // Cek role user — admin diarahkan ke /admin, siswa ke tujuan semula
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", data.user.id)
-      .single();
-
-    if (profile?.role === "admin") {
-      window.location.href = "/admin";
-      return;
-    }
-
-    // ── Cek batasan jadwal login untuk peserta (student) ──────────────────
     try {
-      const res = await fetch("/api/settings");
-      const { settings } = await res.json();
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-      if (settings?.login_schedule_enabled) {
-        const now = new Date();
-        const start = settings.login_start_time ? new Date(settings.login_start_time) : null;
-        const end = settings.login_end_time ? new Date(settings.login_end_time) : null;
-
-        const isBeforeStart = start && now < start;
-        const isAfterEnd = end && now > end;
-
-        if (isBeforeStart || isAfterEnd) {
-          // Sign out siswa yang mencoba login di luar jadwal
-          await supabase.auth.signOut();
-          setLoading(false);
-
-          const formatTime = (d: Date | null) =>
-            d
-              ? d.toLocaleString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : "-";
-
-          setError(
-            `Akses login peserta saat ini ditutup. Jadwal login & ujian dibuka pada: ${formatTime(start)} s.d. ${formatTime(end)} WIB.`
-          );
-          return;
-        }
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
       }
-    } catch {
-      // Abaikan jika API error, izinkan login
-    }
 
-    window.location.href = redirectTo;
+      if (!data?.user) {
+        setError("Akun tidak ditemukan. Silakan periksa kembali email & password Anda.");
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+
+      // Cek role user
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      const targetPath = profile?.role === "admin" ? "/admin" : redirectTo;
+
+      // Beri waktu token tersimpan di browser lalu navigasi
+      setTimeout(() => {
+        router.push(targetPath);
+        setTimeout(() => {
+          window.location.href = targetPath;
+        }, 400);
+      }, 200);
+    } catch {
+      setError("Terjadi kesalahan koneksi. Silakan coba beberapa saat lagi.");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-scale-in">
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl border border-neutral-100 p-8">
+        <div className="bg-white rounded-3xl shadow-2xl border border-neutral-100 p-8 sm:p-9">
           {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
+          <div className="flex flex-col items-center mb-6">
             <BrandLogo size="lg" className="mb-4 shadow-brand" />
-            <h1 className="font-heading font-800 text-neutral-900 text-xl">Sign In</h1>
-            <p className="text-sm text-neutral-500 mt-1">Kind English Course</p>
+            <h1 className="font-heading font-800 text-neutral-900 text-2xl">Masuk Akun</h1>
+            <p className="text-xs text-neutral-500 mt-1">Kind English Course</p>
           </div>
 
+          {success && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 mb-4 text-xs font-semibold text-[#007D07] flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Berhasil masuk! Mengarahkan ke dashboard...
+            </div>
+          )}
+
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-xs text-red-600">
+            <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 mb-4 text-xs font-medium text-red-600">
               {error}
             </div>
           )}
