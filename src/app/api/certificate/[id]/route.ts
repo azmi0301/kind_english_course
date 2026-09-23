@@ -197,18 +197,13 @@ export async function GET(
   doc.setFontSize(9.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
-  doc.text("TOEFL ITP INSTITUTIONAL TEST", W / 2, 83, { align: "center" });
-
-  // --- CENTRAL QR CODE & REAL SCORE REPORT CARD ---
+  // --- CENTRAL QR CODE & FINAL SCORE REPORT CARD ---
   const boxX = 36;
   const boxY = 89;
   const boxW = W - 72; // 225 mm
   const boxH = 48;
 
   const totalScore = result?.total_score ?? 310;
-  const listeningScore = result?.listening_scaled ?? 31;
-  const structureScore = result?.structure_scaled ?? 31;
-  const readingScore = result?.reading_scaled ?? 31;
   const cefrLevel = result?.level ? `CEFR ${result.level}` : "CEFR Beginner";
 
   // Outer Rounded Box
@@ -218,7 +213,7 @@ export async function GET(
   doc.roundedRect(boxX, boxY, boxW, boxH, 3, 3, "FD");
 
   // Left QR Code Frame with Gold Border
-  const qrX = boxX + 5;
+  const qrX = boxX + 6;
   const qrY = boxY + 5.5;
   const qrSize = 37;
   doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
@@ -228,142 +223,86 @@ export async function GET(
   doc.roundedRect(qrX - 1, qrY - 1, qrSize + 2, qrSize + 2, 1, 1);
 
   // Vertical Gold Accent Line next to QR Code
-  const textLeft = qrX + qrSize + 7;
+  const textLeft = qrX + qrSize + 9;
   doc.setDrawColor(197, 160, 89);
   doc.setLineWidth(0.8);
-  doc.line(textLeft - 3, boxY + 6, textLeft - 3, boxY + 42);
+  doc.line(textLeft - 4, boxY + 6, textLeft - 4, boxY + 42);
 
   // Box Header Row
-  doc.setFontSize(8);
+  doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
-  doc.text("OFFICIAL TOEFL ITP® SCORE REPORT", textLeft, boxY + 7.5);
+  doc.text("OFFICIAL TOEFL ITP® FINAL SCORE", textLeft, boxY + 8.5);
 
-  doc.setFontSize(6.5);
+  doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text("Score Scale: 310 - 677", boxX + boxW - 6, boxY + 7.5, { align: "right" });
+  doc.text("Validated Institutional Assessment • Kind English Course", textLeft, boxY + 13);
 
-  // 1. Total Score Card (Left)
-  const tsX = textLeft;
-  const tsY = boxY + 11;
-  const tsW = 41;
-  const tsH = 26;
+  // Big Final Score Display Banner
+  const scX = textLeft;
+  const scY = boxY + 16.5;
+  const scW = boxX + boxW - textLeft - 6; // ~165 mm
+  const scH = 23;
+
   doc.setFillColor(240, 253, 244); // emerald-50
   doc.setDrawColor(134, 239, 172); // emerald-300
   doc.setLineWidth(0.4);
-  doc.roundedRect(tsX, tsY, tsW, tsH, 2, 2, "FD");
+  doc.roundedRect(scX, scY, scW, scH, 2.5, 2.5, "FD");
 
-  doc.setFontSize(6);
+  // Score Number on Left Side of Card
+  doc.setFontSize(6.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(21, 128, 61); // emerald-700
-  doc.text("TOTAL SCORE", tsX + tsW / 2, tsY + 4.5, { align: "center" });
+  doc.text("OVERALL SCORE", scX + 6, scY + 6);
 
-  doc.setFontSize(20);
+  doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 125, 7); // Brand Green
-  doc.text(String(totalScore), tsX + tsW / 2, tsY + 15.5, { align: "center" });
+  doc.text(String(totalScore), scX + 6, scY + 18.5);
 
-  // Level Pill
-  doc.setFillColor(220, 252, 231);
-  doc.roundedRect(tsX + 3, tsY + 18.5, tsW - 6, 5.5, 1.5, 1.5, "F");
-  doc.setFontSize(5.5);
+  // Vertical Divider in Card
+  const midDividerX = scX + 52;
+  doc.setDrawColor(187, 247, 208); // emerald-200
+  doc.setLineWidth(0.4);
+  doc.line(midDividerX, scY + 3.5, midDividerX, scY + scH - 3.5);
+
+  // Right Side Information in Card
+  const infoX = midDividerX + 6;
+
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Standardized Scale:", infoX, scY + 6.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text("310 – 677 Points", infoX + 28, scY + 6.5);
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Proficiency Level:", infoX, scY + 12);
+
+  // Level Badge Pill
+  const badgeX = infoX + 26;
+  const badgeY = scY + 8.5;
+  const badgeW = doc.getTextWidth(cefrLevel) + 8;
+  doc.setFillColor(220, 252, 231); // emerald-100
+  doc.roundedRect(badgeX, badgeY, Math.max(badgeW, 28), 5.5, 1.5, 1.5, "F");
+  doc.setFontSize(6);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(21, 128, 61);
-  doc.text(cefrLevel, tsX + tsW / 2, tsY + 22.3, { align: "center" });
+  doc.text(cefrLevel, badgeX + Math.max(badgeW, 28) / 2, badgeY + 3.8, { align: "center" });
 
-  // 2. Section 1 (Listening)
-  const s1X = tsX + tsW + 4;
-  const s1Y = boxY + 11;
-  const sW = 39;
-  const sH = 26;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(s1X, s1Y, sW, sH, 2, 2, "FD");
-
-  doc.setFontSize(5);
+  doc.setFontSize(6.8);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(124, 58, 237); // purple-600
-  doc.text("SECTION 1", s1X + sW / 2, s1Y + 4.2, { align: "center" });
+  doc.setTextColor(5, 150, 105);
+  doc.text("✓ Authenticated & Officially Certified Record", infoX, scY + 18.5);
 
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 41, 59);
-  doc.text("Listening", s1X + sW / 2, s1Y + 8.2, { align: "center" });
-
-  doc.setFontSize(15);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text(String(listeningScore), s1X + sW / 2, s1Y + 17.5, { align: "center" });
-
-  doc.setFontSize(4.8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Scaled: 31 - 68", s1X + sW / 2, s1Y + 22.8, { align: "center" });
-
-  // 3. Section 2 (Structure & Written Expression)
-  const s2X = s1X + sW + 3;
-  const s2Y = boxY + 11;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(s2X, s2Y, sW, sH, 2, 2, "FD");
-
-  doc.setFontSize(5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(37, 99, 235); // blue-600
-  doc.text("SECTION 2", s2X + sW / 2, s2Y + 4.2, { align: "center" });
-
+  // Bottom Note
   doc.setFontSize(6.2);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 41, 59);
-  doc.text("Structure & Written", s2X + sW / 2, s2Y + 8.2, { align: "center" });
-
-  doc.setFontSize(15);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text(String(structureScore), s2X + sW / 2, s2Y + 17.5, { align: "center" });
-
-  doc.setFontSize(4.8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text("Scaled: 31 - 68", s2X + sW / 2, s2Y + 22.8, { align: "center" });
-
-  // 4. Section 3 (Reading Comprehension)
-  const s3X = s2X + sW + 3;
-  const s3Y = boxY + 11;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(s3X, s3Y, sW, sH, 2, 2, "FD");
-
-  doc.setFontSize(5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(5, 150, 105); // emerald-600
-  doc.text("SECTION 3", s3X + sW / 2, s3Y + 4.2, { align: "center" });
-
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 41, 59);
-  doc.text("Reading", s3X + sW / 2, s3Y + 8.2, { align: "center" });
-
-  doc.setFontSize(15);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text(String(readingScore), s3X + sW / 2, s3Y + 17.5, { align: "center" });
-
-  doc.setFontSize(4.8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("Scaled: 31 - 68", s3X + sW / 2, s3Y + 22.8, { align: "center" });
-
-  // Bottom Verification Details Note
-  doc.setFontSize(5.8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text("• Authenticated by Kind English Course Assessment Board", textLeft, boxY + 42.5);
-  doc.text(`Verify Online: kindenglish.id/verify/${id.slice(0, 8)}`, boxX + boxW - 6, boxY + 42.5, { align: "right" });
+  doc.text(`Scan QR code at left to verify online at kindenglish.id/verify/${id.slice(0, 8)}`, textLeft, boxY + 43.5);
 
   // --- FOOTER SECTION ---
   const footerY = 153;
