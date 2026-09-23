@@ -41,7 +41,7 @@ function LoginForm() {
       .single();
 
     if (profile?.role === "admin") {
-      router.push("/admin");
+      window.location.href = "/admin";
       return;
     }
 
@@ -84,7 +84,7 @@ function LoginForm() {
       // Abaikan jika API error, izinkan login
     }
 
-    router.push(redirectTo);
+    window.location.href = redirectTo;
   };
 
   return (

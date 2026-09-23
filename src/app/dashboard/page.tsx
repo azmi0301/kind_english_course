@@ -82,29 +82,23 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     setSigningOut(true);
     await supabase.auth.signOut();
-    router.replace("/auth/login");
+    window.location.href = "/auth/login";
   };
 
   useEffect(() => {
-    async function loadData() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace("/auth/login");
-        return;
-      }
+    let isMounted = true;
 
-      const userId = session.user.id;
-
+    async function fetchUserData(userId: string) {
       try {
         const res = await fetch(`/api/user/dashboard?userId=${userId}`);
         if (!res.ok) {
-          setLoading(false);
+          if (isMounted) setLoading(false);
           return;
         }
 
         const { profile, results: rows } = await res.json();
 
-        if (profile) {
+        if (profile && isMounted) {
           setStudentName(profile.name || profile.email?.split("@")[0] || "Student");
           setStudentEmail(profile.email ?? "");
           setJoinDate(profile.join_date ?? "");
@@ -121,7 +115,7 @@ export default function DashboardPage() {
                 if ((start && now < start) || (end && now > end)) {
                   setScheduleActive(false);
                   await supabase.auth.signOut();
-                  router.replace("/auth/login");
+                  window.location.href = "/auth/login";
                   return;
                 }
               }
@@ -131,28 +125,71 @@ export default function DashboardPage() {
           }
         }
 
-        const mapped: TestResult[] = (rows ?? []).map((row: Record<string, unknown>) => ({
-          id: row.id as string,
-          date: (row.submitted_at ?? row.created_at) as string,
-          examTitle: row.exam_title as string,
-          examType: row.exam_type as "ITP" | "Diagnostic" | "Practice",
-          score: calculateITPScore(
-            (row.listening_raw as number) ?? 0, (row.listening_total as number) ?? 50,
-            (row.structure_raw as number) ?? 0, (row.structure_total as number) ?? 40,
-            (row.reading_raw as number) ?? 0, (row.reading_total as number) ?? 50,
-          ),
-          duration: (row.duration_minutes as number) ?? 115,
-          certificateReady: (row.certificate_ready as boolean) ?? false,
-        }));
+        if (isMounted) {
+          const mapped: TestResult[] = (rows ?? []).map((row: Record<string, unknown>) => ({
+            id: row.id as string,
+            date: (row.submitted_at ?? row.created_at) as string,
+            examTitle: row.exam_title as string,
+            examType: row.exam_type as "ITP" | "Diagnostic" | "Practice",
+            score: calculateITPScore(
+              (row.listening_raw as number) ?? 0, (row.listening_total as number) ?? 50,
+              (row.structure_raw as number) ?? 0, (row.structure_total as number) ?? 40,
+              (row.reading_raw as number) ?? 0, (row.reading_total as number) ?? 50,
+            ),
+            duration: (row.duration_minutes as number) ?? 115,
+            certificateReady: (row.certificate_ready as boolean) ?? false,
+          }));
 
-        setResults(mapped);
+          setResults(mapped);
+        }
       } catch (err) {
         console.error("Dashboard load error:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
+
+    async function loadData() {
+      // 1. Cek session saat ini
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        fetchUserData(session.user.id);
+        return;
+      }
+
+      // 2. Jika belum ada session, pasang auth listener untuk inisialisasi
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, currentSession) => {
+        if (currentSession && isMounted) {
+          fetchUserData(currentSession.user.id);
+        } else if (event === "SIGNED_OUT" && isMounted) {
+          window.location.href = "/auth/login";
+        }
+      });
+
+      // 3. Fallback timeout 1.5 detik jika benar-benar tidak ada sesi
+      const timeoutId = setTimeout(async () => {
+        if (isMounted) {
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          if (!retrySession && isMounted) {
+            window.location.href = "/auth/login";
+          } else if (retrySession && isMounted) {
+            fetchUserData(retrySession.user.id);
+          }
+        }
+      }, 1500);
+
+      return () => {
+        authListener.subscription.unsubscribe();
+        clearTimeout(timeoutId);
+      };
+    }
+
     loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   const latest = results[0];
