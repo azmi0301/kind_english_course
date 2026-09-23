@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, ArrowRight, Loader2, Mail, CheckCircle2, ArrowLeft } from "lucide-react";
+import { ArrowRight, Loader2, Mail, CheckCircle2, ArrowLeft, KeyRound } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -14,109 +16,111 @@ export default function ForgotPasswordPage() {
     setError("");
 
     if (!email) {
-      setError("Please enter your email address.");
+      setError("Mohon masukkan alamat email Anda.");
       return;
     }
 
     setLoading(true);
-    // Demo: simulate sending reset email
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setSent(true);
+
+    try {
+      const redirectTo = `${window.location.origin}/auth/update-password`;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (resetError) {
+        setError(resetError.message);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(false);
+      setSent(true);
+    } catch {
+      setError("Terjadi kesalahan saat mengirim tautan reset. Silakan coba lagi.");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-scale-in">
-        <div className="bg-white rounded-2xl shadow-2xl border border-neutral-100 p-8">
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 p-8 sm:p-9">
 
-          {/* Logo */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-[#007D07] flex items-center justify-center mb-4 shadow-brand">
-              <BookOpen className="w-7 h-7 text-white" />
-            </div>
-            <h1 className="font-heading font-800 text-neutral-900 text-xl">
-              {sent ? "Check Your Email" : "Forgot Password?"}
+          {/* Logo & Header */}
+          <div className="flex flex-col items-center mb-6">
+            <BrandLogo size="lg" className="shadow-brand mb-4" />
+            <h1 className="font-heading font-800 text-slate-900 text-2xl tracking-tight">
+              {sent ? "Periksa Email Anda" : "Lupa Kata Sandi?"}
             </h1>
-            <p className="text-sm text-neutral-500 mt-1 text-center">
+            <p className="text-xs text-slate-500 mt-1 text-center">
               {sent
-                ? `We've sent a reset link to ${email}`
-                : "No worries — we'll send you a reset link."}
+                ? `Kami telah mengirimkan tautan reset kata sandi ke email Anda`
+                : "Masukkan email terdaftar untuk menerima tautan pemulihan kata sandi."}
             </p>
           </div>
 
           {/* Success state */}
           {sent ? (
-            <div className="space-y-6">
-              <div className="flex flex-col items-center gap-4 py-4">
-                <div className="w-20 h-20 rounded-full bg-[#E8F5E9] flex items-center justify-center">
-                  <CheckCircle2 className="w-10 h-10 text-[#007D07]" />
+            <div className="space-y-5">
+              <div className="flex flex-col items-center gap-3 py-2 text-center">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 text-[#007D07]" />
                 </div>
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-neutral-600">
-                    A password reset link has been sent to:
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-600">
+                    Tautan pemulihan kata sandi telah dikirim ke:
                   </p>
-                  <p className="text-sm font-semibold text-neutral-900 bg-neutral-50 px-4 py-2 rounded-lg border border-neutral-200">
+                  <p className="text-sm font-bold text-slate-900 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 font-mono">
                     {email}
                   </p>
-                  <p className="text-xs text-neutral-500">
-                    Didn&apos;t receive it? Check your spam folder or try again.
+                  <p className="text-[11px] text-slate-500 pt-2 leading-relaxed">
+                    Silakan buka kotak masuk email (atau folder <strong>Spam / Promosi</strong>), lalu klik tautan di dalamnya untuk membuat kata sandi baru.
                   </p>
                 </div>
               </div>
 
-              {/* Demo notice */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                <p className="text-xs text-amber-700">
-                  <strong>Demo Mode:</strong> Email sending is simulated. Connect a mail service (e.g. Resend, SendGrid) for real reset emails.
-                </p>
+              <div className="pt-2 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => { setSent(false); setEmail(""); }}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-colors"
+                >
+                  Gunakan Email Lain
+                </button>
+
+                <Link
+                  href="/auth/login"
+                  className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#007D07] text-white font-semibold text-xs hover:bg-[#006A06] transition-all shadow-brand"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Kembali ke Halaman Masuk
+                </Link>
               </div>
-
-              <button
-                onClick={() => { setSent(false); setEmail(""); }}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-neutral-200 text-neutral-700 font-semibold text-sm hover:bg-neutral-50 transition-colors"
-              >
-                Try a different email
-              </button>
-
-              <Link
-                href="/auth/login"
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#007D07] text-white font-semibold text-sm hover:bg-[#006A06] transition-all shadow-brand"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Sign In
-              </Link>
             </div>
           ) : (
             <>
-              {/* Demo notice */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
-                <p className="text-xs text-amber-700">
-                  <strong>Demo Mode:</strong> Enter any email and we&apos;ll simulate sending a reset link.
-                </p>
-              </div>
-
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-xs text-red-600">
+                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-xs font-medium text-red-600">
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="forgot-email" className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                    Email Address
+                  <label htmlFor="forgot-email" className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Alamat Email Terdaftar
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       id="forgot-email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
+                      placeholder="nama@email.com"
                       required
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:border-[#007D07] focus:ring-2 focus:ring-[#007D07]/20 transition-all"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#007D07] focus:ring-2 focus:ring-[#007D07]/20 transition-all"
                     />
                   </div>
                 </div>
@@ -125,30 +129,31 @@ export default function ForgotPasswordPage() {
                   id="btn-reset"
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#007D07] text-white font-semibold rounded-xl hover:bg-[#006A06] transition-all shadow-brand disabled:opacity-60 disabled:cursor-not-allowed text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#007D07] text-white font-bold rounded-2xl hover:bg-[#006A06] transition-all shadow-brand disabled:opacity-60 disabled:cursor-not-allowed text-xs sm:text-sm cursor-pointer"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                  {loading ? "Sending reset link..." : "Send Reset Link"}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                  {loading ? "Mengirim Tautan..." : "Kirim Tautan Reset Kata Sandi"}
                 </button>
               </form>
 
               <div className="mt-6 text-center">
                 <Link
                   href="/auth/login"
-                  className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-[#007D07] transition-colors font-medium"
+                  className="inline-flex items-center gap-1.5 text-xs text-[#007D07] font-bold hover:underline"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Sign In
+                  Ingat kata sandi? Masuk di sini
                 </Link>
               </div>
             </>
           )}
         </div>
 
-        <p className="text-center text-xs text-neutral-400 mt-6">
-          <Link href="/" className="hover:text-[#007D07] transition-colors">← Back to Kind English Course</Link>
+        <p className="text-center text-xs text-slate-400 mt-6">
+          <Link href="/" className="hover:text-[#007D07] transition-colors">← Kembali ke Beranda</Link>
         </p>
       </div>
     </div>
   );
 }
+
