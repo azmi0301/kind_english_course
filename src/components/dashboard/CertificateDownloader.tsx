@@ -236,81 +236,32 @@ export default function CertificateDownloader({
       doc.setLineWidth(0.8);
       doc.line(textLeft - 4, boxY + 6, textLeft - 4, boxY + 42);
 
-      // Box Header Row
-      doc.setFontSize(9);
+      // Center position of right score area
+      const rightCenterX = (textLeft + boxX + boxW - 6) / 2;
+
+      // Header
+      doc.setFontSize(8.5);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text("OFFICIAL TOEFL ITP® FINAL SCORE", textLeft, boxY + 8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text("TOTAL TOEFL ITP® OFFICIAL SCORE", rightCenterX, boxY + 13, { align: "center" });
 
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 116, 139);
-      doc.text("Validated Institutional Assessment • Kind English Course", textLeft, boxY + 13);
-
-      // Big Final Score Display Banner
-      const scX = textLeft;
-      const scY = boxY + 16.5;
-      const scW = boxX + boxW - textLeft - 6; // ~165 mm
-      const scH = 23;
-
-      doc.setFillColor(240, 253, 244); // emerald-50
-      doc.setDrawColor(134, 239, 172); // emerald-300
-      doc.setLineWidth(0.4);
-      doc.roundedRect(scX, scY, scW, scH, 2.5, 2.5, "FD");
-
-      // Score Number on Left Side of Card
-      doc.setFontSize(6.5);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(21, 128, 61); // emerald-700
-      doc.text("OVERALL SCORE", scX + 6, scY + 6);
-
-      doc.setFontSize(28);
+      // Big Prominent Final Score Number
+      doc.setFontSize(40);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 125, 7); // Brand Green
-      doc.text(String(totalScore), scX + 6, scY + 18.5);
+      doc.text(String(totalScore), rightCenterX, boxY + 28.5, { align: "center" });
 
-      // Vertical Divider in Card
-      const midDividerX = scX + 52;
-      doc.setDrawColor(187, 247, 208); // emerald-200
-      doc.setLineWidth(0.4);
-      doc.line(midDividerX, scY + 3.5, midDividerX, scY + scH - 3.5);
-
-      // Right Side Information in Card
-      const infoX = midDividerX + 6;
-
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Standardized Scale:", infoX, scY + 6.5);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text("310 – 677 Points", infoX + 28, scY + 6.5);
-
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      doc.text("Proficiency Level:", infoX, scY + 12);
-
-      // Level Badge Pill
-      const badgeX = infoX + 26;
-      const badgeY = scY + 8.5;
-      const badgeW = doc.getTextWidth(cefrLevel) + 8;
-      doc.setFillColor(220, 252, 231); // emerald-100
-      doc.roundedRect(badgeX, badgeY, Math.max(badgeW, 28), 5.5, 1.5, 1.5, "F");
-      doc.setFontSize(6);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(21, 128, 61);
-      doc.text(cefrLevel, badgeX + Math.max(badgeW, 28) / 2, badgeY + 3.8, { align: "center" });
-
-      doc.setFontSize(6.8);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(5, 150, 105);
-      doc.text("✓ Authenticated & Officially Certified Record", infoX, scY + 18.5);
-
-      // Bottom Note
-      doc.setFontSize(6.2);
+      // Score Scale
+      doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 116, 139);
-      doc.text(`Scan QR code at left to verify online at kindenglish.id/verify/${result.id.slice(0, 8)}`, textLeft, boxY + 43.5);
+      doc.text("Scaled Score (310 – 677)", rightCenterX, boxY + 34.5, { align: "center" });
+
+      // Bottom Verification Note
+      doc.setFontSize(6.2);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Scan QR barcode to verify online: kindenglish.id/verify/${result.id.slice(0, 8)}`, rightCenterX, boxY + 42, { align: "center" });
 
       // --- FOOTER SECTION ---
       const footerY = 153;
